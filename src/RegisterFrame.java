@@ -1,63 +1,121 @@
 import javax.swing.*;
-import java.awt.event.*;
+import java.awt.*;
 
-public class RegisterFrame extends JFrame implements ActionListener {
+public class RegisterFrame extends JFrame {
 
-    JTextField nameField, emailField, numberField;
-    JPasswordField passField;
+    private JTextField     nameField   = UITheme.makeField();
+    private JTextField     emailField  = UITheme.makeField();
+    private JTextField     numberField = UITheme.makeField();
+    private JPasswordField passField   = UITheme.makePassField();
+    private JPasswordField confirmField= UITheme.makePassField();
+    private JLabel         errorLabel  = UITheme.makeLabel("", UITheme.FONT_SMALL, UITheme.ERROR_RED);
 
     public RegisterFrame() {
-        setTitle("Register");
-        setSize(350, 300);
+        setTitle("Pac-Man — Create Account");
+        setSize(420, 640);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLayout(null);
+        setResizable(false);
+        UITheme.styleFrame(this);
 
-        // Labels & Fields
-        nameField   = addField("Name:", 20);
-        emailField  = addField("Email:", 60);
-        numberField = addField("Number:", 100);
-
-        JLabel passLabel = new JLabel("Password:");
-        passLabel.setBounds(20, 140, 100, 25);
-        add(passLabel);
-
-        passField = new JPasswordField();
-        passField.setBounds(120, 140, 180, 25);
-        add(passField);
-
-        JButton registerButton = new JButton("Register");
-        registerButton.setBounds(120, 190, 180, 30);
-        registerButton.addActionListener(this);
-        add(registerButton);
-
+        setContentPane(buildContent());
         setVisible(true);
     }
 
-    // Reusable method
-    private JTextField addField(String text, int y) {
-        JLabel label = new JLabel(text);
-        label.setBounds(20, y, 100, 25);
-        add(label);
+    private JPanel buildContent() {
+        JPanel root = new JPanel(new GridBagLayout());
+        root.setBackground(UITheme.BG_DARK);
 
-        JTextField field = new JTextField();
-        field.setBounds(120, y, 180, 25);
-        add(field);
+        JPanel card = UITheme.makeCard();
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createEmptyBorder(32, 40, 32, 40));
+        card.setPreferredSize(new Dimension(350, 570));
 
-        return field;
+  
+        JLabel title = UITheme.makeLabel("CREATE ACCOUNT", UITheme.FONT_TITLE, UITheme.ACCENT);
+        title.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(title);
+
+        JLabel sub = UITheme.makeLabel("Join the game", UITheme.FONT_SMALL, UITheme.TEXT_MUTED);
+        sub.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(sub);
+        card.add(Box.createVerticalStrut(24));
+
+    
+        card.add(fieldRow("Full Name",       nameField));    card.add(Box.createVerticalStrut(12));
+        card.add(fieldRow("Email",           emailField));   card.add(Box.createVerticalStrut(12));
+        card.add(fieldRow("Phone Number",    numberField));  card.add(Box.createVerticalStrut(12));
+        card.add(fieldRow("Password",        passField));    card.add(Box.createVerticalStrut(12));
+        card.add(fieldRow("Confirm Password",confirmField)); card.add(Box.createVerticalStrut(6));
+
+        errorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        card.add(errorLabel);
+        card.add(Box.createVerticalStrut(16));
+
+      
+        JButton regBtn = UITheme.makeButton("REGISTER", UITheme.ACCENT, UITheme.BG_DARK);
+        regBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        regBtn.setMaximumSize(new Dimension(260, 42));
+        regBtn.addActionListener(e -> doRegister());
+        card.add(regBtn);
+        card.add(Box.createVerticalStrut(14));
+
+       
+        JButton backBtn = UITheme.makeButton("BACK TO LOGIN", UITheme.BG_FIELD, UITheme.TEXT_WHITE);
+        backBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        backBtn.setMaximumSize(new Dimension(260, 42));
+        backBtn.addActionListener(e -> { dispose(); new LoginFrame(); });
+        card.add(backBtn);
+
+        root.add(card);
+        return root;
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        UserStorage.saveUser(
-            nameField.getText(),
-            emailField.getText(),
-            numberField.getText(),
-            new String(passField.getPassword())
-        );
 
-        JOptionPane.showMessageDialog(this, "Registered Successfully!");
+    private void doRegister() {
+        String name    = nameField.getText().trim();
+        String email   = emailField.getText().trim();
+        String number  = numberField.getText().trim();
+        String pass    = new String(passField.getPassword());
+        String confirm = new String(confirmField.getPassword());
+
+        if (name.isEmpty() || email.isEmpty() || number.isEmpty() || pass.isEmpty()) {
+            showError("Please fill in all fields."); return;
+        }
+        if (!email.contains("@") || !email.contains(".")) {
+            showError("Please enter a valid email."); return;
+        }
+        if (pass.length() < 6) {
+            showError("Password must be at least 6 characters."); return;
+        }
+        if (!pass.equals(confirm)) {
+            showError("Passwords do not match."); return;
+        }
+        if (UserStorage.emailExists(email)) {
+            showError("Email already registered."); return;
+        }
+
+        UserStorage.saveUser(name, email, number, pass);
+        JOptionPane.showMessageDialog(this,
+            "<html><b>Account created!</b><br>Welcome, " + name + "!</html>",
+            "Success", JOptionPane.INFORMATION_MESSAGE);
         dispose();
         new LoginFrame();
+    }
+
+    private void showError(String msg) { errorLabel.setText(msg); }
+
+    private JPanel fieldRow(String label, JComponent field) {
+        JPanel p = new JPanel();
+        p.setLayout(new BoxLayout(p, BoxLayout.Y_AXIS));
+        p.setOpaque(false);
+        JLabel lbl = UITheme.makeLabel(label, UITheme.FONT_LABEL, UITheme.TEXT_MUTED);
+        lbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setAlignmentX(Component.LEFT_ALIGNMENT);
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, 38));
+        p.add(lbl);
+        p.add(Box.createVerticalStrut(4));
+        p.add(field);
+        return p;
     }
 }

@@ -31,7 +31,8 @@ public class LevelSelectFrame extends JFrame {
         dispose();
 
         JFrame frame = new JFrame("PacMan");
-        PacMan game = new PacMan(diff);
+        
+        PacMan game = new PacMan();
 
         frame.add(game);
         frame.pack();
